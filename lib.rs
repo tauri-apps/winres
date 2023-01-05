@@ -214,17 +214,17 @@ impl WindowsResource {
             && cfg!(not(target_env = "msvc"))
         {
             match env::var("TARGET").unwrap().as_str() {
-                #[cfg(not(target_os == "windows"))]
+                #[cfg(not(target_os = "windows"))]
                 "x86_64-pc-windows-msvc" => "x86_64-w64-mingw32-",
                 "x86_64-pc-windows-gnu" => "x86_64-w64-mingw32-",
-                #[cfg(not(target_os == "windows"))]
+                #[cfg(not(target_os = "windows"))]
                 "i686-pc-windows-msvc" => "i686-w64-mingw32-",
                 "i686-pc-windows-gnu" => "i686-w64-mingw32-",
                 "i586-pc-windows-gnu" => "i586-w64-mingw32-",
                 // MinGW supports ARM64 only with an LLVM-based toolchain
                 // (x86 users might also be using LLVM, but we can't tell that from the Rust target...)
                 "aarch64-pc-windows-gnu" => "llvm-",
-                #[cfg(not(target_os == "windows"))]
+                #[cfg(not(target_os = "windows"))]
                 "aarch64-pc-windows-msvc" => "llvm-",
                 // fail safe
                 _ => {
