@@ -1,5 +1,0 @@
----
-'winres': minor
----
-
-Initial release.
