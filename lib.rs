@@ -214,12 +214,18 @@ impl WindowsResource {
             && cfg!(not(target_env = "msvc"))
         {
             match env::var("TARGET").unwrap().as_str() {
+                #[cfg(not(target_os = "windows"))]
+                "x86_64-pc-windows-msvc" => "x86_64-w64-mingw32-",
                 "x86_64-pc-windows-gnu" => "x86_64-w64-mingw32-",
+                #[cfg(not(target_os = "windows"))]
+                "i686-pc-windows-msvc" => "i686-w64-mingw32-",
                 "i686-pc-windows-gnu" => "i686-w64-mingw32-",
                 "i586-pc-windows-gnu" => "i586-w64-mingw32-",
                 // MinGW supports ARM64 only with an LLVM-based toolchain
                 // (x86 users might also be using LLVM, but we can't tell that from the Rust target...)
                 "aarch64-pc-windows-gnu" => "llvm-",
+                #[cfg(not(target_os = "windows"))]
+                "aarch64-pc-windows-msvc" => "llvm-",
                 // fail safe
                 _ => {
                     println!(
@@ -611,7 +617,13 @@ impl WindowsResource {
     }
 
     fn compile_with_toolkit_gnu<'a>(&self, input: &'a str, output_dir: &'a str) -> io::Result<()> {
-        let output = PathBuf::from(output_dir).join("resource.o");
+        let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
+
+        let output = PathBuf::from(output_dir).join(if target_env == "msvc" {
+            "resource.lib"
+        } else {
+            "resource.o"
+        });
         let input = PathBuf::from(input);
         let status = process::Command::new(&self.windres_path)
             .current_dir(&self.toolkit_path)
@@ -626,26 +638,32 @@ impl WindowsResource {
             ));
         }
 
-        let libname = PathBuf::from(output_dir).join("libresource.a");
-        let status = process::Command::new(&self.ar_path)
-            .current_dir(&self.toolkit_path)
-            .arg("rsc")
-            .arg(format!("{}", libname.display()))
-            .arg(format!("{}", output.display()))
-            .status()?;
-        if !status.success() {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Could not create static library for resource file",
-            ));
+        if target_env == "gnu" {
+            let libname = PathBuf::from(output_dir).join("libresource.a");
+            let status = process::Command::new(&self.ar_path)
+                .current_dir(&self.toolkit_path)
+                .arg("rsc")
+                .arg(format!("{}", libname.display()))
+                .arg(format!("{}", output.display()))
+                .status()?;
+            if !status.success() {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Could not create static library for resource file",
+                ));
+            }
         }
 
         println!("cargo:rustc-link-search=native={}", output_dir);
 
-        if version_check::is_min_version("1.61.0").unwrap_or(true) {
-            println!("cargo:rustc-link-lib=static:+whole-archive=resource");
+        if target_env == "msvc" {
+            println!("cargo:rustc-link-lib=dylib=resource");
         } else {
-            println!("cargo:rustc-link-lib=static=resource");
+            if version_check::is_min_version("1.61.0").unwrap_or(true) {
+                println!("cargo:rustc-link-lib=static:+whole-archive=resource");
+            } else {
+                println!("cargo:rustc-link-lib=static=resource");
+            }
         }
 
         Ok(())
@@ -672,14 +690,19 @@ impl WindowsResource {
             rc.to_str().unwrap().to_string()
         };
 
-        let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
-        match target_env.as_str() {
-            "gnu" => self.compile_with_toolkit_gnu(rc.as_str(), &self.output_directory),
-            "msvc" => self.compile_with_toolkit_msvc(rc.as_str(), &self.output_directory),
-            _ => Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Can only compile resource file when target_env is \"gnu\" or \"msvc\"",
-            )),
+        #[cfg(not(target_os = "windows"))]
+        return self.compile_with_toolkit_gnu(rc.as_str(), &self.output_directory);
+        #[cfg(target_os = "windows")]
+        {
+            let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
+            match target_env.as_str() {
+                "gnu" => self.compile_with_toolkit_gnu(rc.as_str(), &self.output_directory),
+                "msvc" => self.compile_with_toolkit_msvc(rc.as_str(), &self.output_directory),
+                _ => Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Can only compile resource file when target_env is \"gnu\" or \"msvc\"",
+                )),
+            }
         }
     }
 
