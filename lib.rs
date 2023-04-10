@@ -717,7 +717,7 @@ impl WindowsResource {
         };
 
         #[cfg(not(target_os = "windows"))]
-        return self.compile_with_toolkit_gnu(rc.as_str(), &self.output_directory);
+        return self.compile_with_toolkit_gnu(rc.as_str(), &self.output_directory, binary);
         #[cfg(target_os = "windows")]
         {
             let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
