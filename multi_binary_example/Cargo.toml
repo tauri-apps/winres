@@ -1,0 +1,18 @@
+[package]
+name = "library_example"
+description = "Winres - example script for a C library with 2 binaries"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-winres = { path = ".." }
+
+[[bin]]
+name = "a"
+
+[[bin]]
+name = "example-b"
+path = "src/bin/b.rs"
