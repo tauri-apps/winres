@@ -42,7 +42,7 @@ fn main() {
   if std::env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {
     let mut res = tauri_winres::WindowsResource::new();
     res.set_icon("test.ico");
-    res.compile(None).unwrap();
+    res.compile().unwrap();
   }
 }
 ```
@@ -69,7 +69,7 @@ Next, you have to write a build script. A short example is shown below.
 fn main() {
     let mut res = tauri_winres::WindowsResource::new();
     res.set_icon("test.ico");
-    res.compile(None).unwrap();
+    res.compile().unwrap();
 }
 
 #[cfg(unix)]

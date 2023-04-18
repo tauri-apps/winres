@@ -19,7 +19,7 @@
 //!        .set("InternalName", "TEST.EXE")
 //!        // manually set version 1.0.0.0
 //!        .set_version_info(tauri_winres::VersionInfo::PRODUCTVERSION, 0x0001000000000000);
-//!     res.compile(None)?;
+//!     res.compile()?;
 //! }
 //! # Ok(())
 //! # }
@@ -328,7 +328,7 @@ impl WindowsResource {
     ///         winapi::um::winnt::LANG_ENGLISH,
     ///         winapi::um::winnt::SUBLANG_ENGLISH_US
     ///     ));
-    ///     res.compile(None).unwrap();
+    ///     res.compile().unwrap();
     ///   }
     /// }
     /// ```
@@ -595,7 +595,7 @@ impl WindowsResource {
     ///     }
     ///     MENUITEM "&Dessert", 103
     /// }"##);
-    /// #    res.compile(None)?;
+    /// #    res.compile()?;
     /// # }
     /// # Ok::<_, std::io::Error>(())
     /// ```
@@ -700,11 +700,24 @@ impl WindowsResource {
     /// Further more we will print the correct statements for
     /// `cargo:rustc-link-lib=` and `cargo:rustc-link-search` on the console,
     /// so that the cargo build script can link the compiled resource file.
+    pub fn compile(&self) -> io::Result<()> {
+        self.compile_internal(None)
+    }
+
+    /// Run the resource compiler for a specific binary.
     ///
-    /// If your project is a library with multiple binaries and you want to add metadata
-    /// to a specific binary, you need to use the `binary` argument. See `multi_binary_example` for
-    /// an example project doing that.
-    pub fn compile(&self, binary: Option<&str>) -> io::Result<()> {
+    /// This function generates a resource file from the settings or
+    /// uses an existing resource file and passes it to the resource compiler
+    /// of your toolkit.
+    ///
+    /// Furthermore we will print the correct statements for
+    /// `cargo:rustc-link-arg-bin=` and `cargo:rustc-link-search` on the console,
+    /// so that the cargo build script can link the compiled resource file for the desired binary.
+    pub fn compile_for(&self, binary: &str) -> io::Result<()> {
+        self.compile_internal(Some(binary))
+    }
+
+    fn compile_internal(&self, binary: Option<&str>) -> io::Result<()> {
         let output = PathBuf::from(&self.output_directory);
         let rc = output.join(format!("{}.rc", binary.unwrap_or("resource")));
         if self.rc_file.is_none() {

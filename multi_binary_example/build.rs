@@ -7,17 +7,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         // "fatal error CVT1100: duplicate resource"
 
         // let lib_res = tauri_winres::WindowsResource::new();
-        // lib_res.compile(None)?;
+        // lib_res.compile()?;
 
         // Binary target with name "a"
         let mut a_res = tauri_winres::WindowsResource::new();
         a_res.set("FileDescription", "multi_binary_example - example A");
-        a_res.compile(Some("a"))?;
+        a_res.compile_for("a")?;
 
         // Binary target with name "example-b"
         let mut b_res = tauri_winres::WindowsResource::new();
         b_res.set("FileDescription", "multi_binary_example - example B");
-        b_res.compile(Some("example-b"))?;
+        b_res.compile_for("example-b")?;
     }
     Ok(())
 }

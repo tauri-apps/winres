@@ -22,7 +22,7 @@ fn main() {
             // MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US )
             .set_language(0x0409)
             .set_manifest_file("manifest.xml");
-        if let Err(e) = res.compile(None) {
+        if let Err(e) = res.compile() {
             eprintln!("{}", e);
             std::process::exit(1);
         }
