@@ -50,7 +50,10 @@ use std::fs;
 use std::io;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-use std::process;
+
+use helpers::{escape_string, parse_cargo_toml};
+
+mod helpers;
 
 /// Version info field names
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -82,7 +85,6 @@ struct Icon {
 
 #[derive(Debug)]
 pub struct WindowsResource {
-    toolkit_path: PathBuf,
     properties: HashMap<String, String>,
     version_info: HashMap<VersionInfo, u64>,
     rc_file: Option<String>,
@@ -90,10 +92,6 @@ pub struct WindowsResource {
     language: u16,
     manifest: Option<String>,
     manifest_file: Option<String>,
-    output_directory: String,
-    windres_path: String,
-    ar_path: String,
-    add_toolkit_include: bool,
     append_rc_content: String,
 }
 
@@ -197,61 +195,7 @@ impl WindowsResource {
         ver.insert(VersionInfo::FILEFLAGSMASK, 0x3F);
         ver.insert(VersionInfo::FILEFLAGS, 0);
 
-        let sdk = if cfg!(target_env = "msvc") {
-            match get_sdk() {
-                Ok(mut v) => v.pop().unwrap(),
-                Err(_) => PathBuf::new(),
-            }
-        } else if cfg!(windows) {
-            PathBuf::from("\\")
-        } else {
-            PathBuf::from("/")
-        };
-
-        let prefix = if let Ok(cross) = env::var("CROSS_COMPILE") {
-            cross
-        } else if env::var_os("HOST").unwrap() != env::var_os("TARGET").unwrap()
-            && cfg!(not(target_env = "msvc"))
-        {
-            match env::var("TARGET").unwrap().as_str() {
-                #[cfg(not(target_os = "windows"))]
-                "x86_64-pc-windows-msvc" => "x86_64-w64-mingw32-",
-                "x86_64-pc-windows-gnu" => "x86_64-w64-mingw32-",
-                #[cfg(not(target_os = "windows"))]
-                "i686-pc-windows-msvc" => "i686-w64-mingw32-",
-                "i686-pc-windows-gnu" => "i686-w64-mingw32-",
-                "i586-pc-windows-gnu" => "i586-w64-mingw32-",
-                // MinGW supports ARM64 only with an LLVM-based toolchain
-                // (x86 users might also be using LLVM, but we can't tell that from the Rust target...)
-                "aarch64-pc-windows-gnu" => "llvm-",
-                #[cfg(not(target_os = "windows"))]
-                "aarch64-pc-windows-msvc" => "llvm-",
-                // fail safe
-                _ => {
-                    println!(
-                        "cargo:warning=unknown Windows target used for cross-compilation; \
-                              invoking unprefixed windres"
-                    );
-                    ""
-                }
-            }
-            .into()
-        } else {
-            "".into()
-        };
-        let windres_path = if let Ok(windres) = env::var("WINDRES") {
-            windres
-        } else {
-            format!("{}windres", prefix)
-        };
-        let ar_path = if let Ok(ar) = env::var("AR") {
-            ar
-        } else {
-            format!("{}ar", prefix)
-        };
-
         WindowsResource {
-            toolkit_path: sdk,
             properties: props,
             version_info: ver,
             rc_file: None,
@@ -259,10 +203,6 @@ impl WindowsResource {
             language: 0,
             manifest: None,
             manifest_file: None,
-            output_directory: env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()),
-            windres_path,
-            ar_path,
-            add_toolkit_include: false,
             append_rc_content: String::new(),
         }
     }
@@ -291,26 +231,6 @@ impl WindowsResource {
     /// tools might not show them.
     pub fn set<'a>(&mut self, name: &'a str, value: &'a str) -> &mut Self {
         self.properties.insert(name.to_string(), value.to_string());
-        self
-    }
-
-    /// Set the correct path for the toolkit.
-    ///
-    /// For the GNU toolkit this has to be the path where MinGW
-    /// put `windres.exe` and `ar.exe`. This could be something like:
-    /// `"C:\Program Files\mingw-w64\x86_64-5.3.0-win32-seh-rt_v4-rev0\mingw64\bin"`
-    ///
-    /// For MSVC the Windows SDK has to be installed. It comes with the resource compiler
-    /// `rc.exe`. This should be set to the root directory of the Windows SDK, e.g.,
-    /// `"C:\Program Files (x86)\Windows Kits\10"`
-    /// or, if multiple 10 versions are installed,
-    /// set it directly to the corret bin directory
-    /// `"C:\Program Files (x86)\Windows Kits\10\bin\10.0.14393.0\x64"`
-    ///
-    /// If it is left unset, it will look up a path in the registry,
-    /// i.e. `HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots`
-    pub fn set_toolkit_path<'a>(&mut self, path: &'a str) -> &mut Self {
-        self.toolkit_path = PathBuf::from(path);
         self
     }
 
@@ -374,7 +294,7 @@ impl WindowsResource {
     /// Windows uses `32512` as the default icon ID. See
     /// [here](https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadicona)
     /// for Windows docs demonstrating this.
-    pub fn set_icon<'a>(&mut self, path: &'a str) -> &mut Self {
+    pub fn set_icon(&mut self, path: &str) -> &mut Self {
         self.set_icon_with_id(path, "32512")
     }
 
@@ -461,7 +381,7 @@ impl WindowsResource {
     /// </assembly>
     /// "#);
     /// ```
-    pub fn set_manifest<'a>(&mut self, manifest: &'a str) -> &mut Self {
+    pub fn set_manifest(&mut self, manifest: &str) -> &mut Self {
         self.manifest_file = None;
         self.manifest = Some(manifest.to_string());
         self
@@ -473,27 +393,9 @@ impl WindowsResource {
     ///
     /// [`set_manifest()`]: #method.set_manifest
     /// [`set_icon()`]: #method.set_icon
-    pub fn set_manifest_file<'a>(&mut self, file: &'a str) -> &mut Self {
+    pub fn set_manifest_file(&mut self, file: &str) -> &mut Self {
         self.manifest_file = Some(file.to_string());
         self.manifest = None;
-        self
-    }
-
-    /// Set the path to the windres executable.
-    pub fn set_windres_path(&mut self, path: &str) -> &mut Self {
-        self.windres_path = path.to_string();
-        self
-    }
-
-    /// Set the path to the ar executable.
-    pub fn set_ar_path(&mut self, path: &str) -> &mut Self {
-        self.ar_path = path.to_string();
-        self
-    }
-
-    /// Set the path to the ar executable.
-    pub fn add_toolkit_include(&mut self, add: bool) -> &mut Self {
-        self.add_toolkit_include = add;
         self
     }
 
@@ -565,7 +467,7 @@ impl WindowsResource {
     /// We will neither modify this file nor parse its contents. This function
     /// simply replaces the internaly generated resource file that is passed to
     /// the compiler. You can use this function to write a resource file yourself.
-    pub fn set_resource_file<'a>(&mut self, path: &'a str) -> &mut Self {
+    pub fn set_resource_file(&mut self, path: &str) -> &mut Self {
         self.rc_file = Some(path.to_string());
         self
     }
@@ -599,7 +501,7 @@ impl WindowsResource {
     /// # }
     /// # Ok::<_, std::io::Error>(())
     /// ```
-    pub fn append_rc_content<'a>(&mut self, content: &'a str) -> &mut Self {
+    pub fn append_rc_content(&mut self, content: &str) -> &mut Self {
         if !(self.append_rc_content.ends_with('\n') || self.append_rc_content.is_empty()) {
             self.append_rc_content.push('\n');
         }
@@ -607,64 +509,26 @@ impl WindowsResource {
         self
     }
 
-    /// Override the output directoy.
+    /// Run the resource compiler
     ///
-    /// As a default, we use `%OUT_DIR%` set by cargo, but it may be necessary to override the
-    /// the setting.
-    pub fn set_output_directory<'a>(&mut self, path: &'a str) -> &mut Self {
-        self.output_directory = path.to_string();
-        self
-    }
+    /// This function generates a resource file from the settings or
+    /// uses an existing resource file and passes it to the resource compiler
+    /// of your toolkit.
+    ///
+    /// Further more we will print the correct statements for
+    /// `cargo:rustc-link-lib=` and `cargo:rustc-link-search` on the console,
+    /// so that the cargo build script can link the compiled resource file.
+    pub fn compile(&self) -> io::Result<()> {
+        let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
+        let rc = output.join("resource.rc");
 
-    fn compile_with_toolkit_gnu<'a>(&self, input: &'a str, output_dir: &'a str) -> io::Result<()> {
-        let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
-
-        let output = PathBuf::from(output_dir).join(if target_env == "msvc" {
-            "resource.lib"
+        if let Some(s) = self.rc_file.as_ref() {
+            fs::write(&output, s)?;
         } else {
-            "resource.o"
-        });
-        let input = PathBuf::from(input);
-        let status = process::Command::new(&self.windres_path)
-            .current_dir(&self.toolkit_path)
-            .arg(format!("-I{}", env::var("CARGO_MANIFEST_DIR").unwrap()))
-            .arg(format!("{}", input.display()))
-            .arg(format!("{}", output.display()))
-            .status()?;
-        if !status.success() {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Could not compile resource file",
-            ));
+            self.write_resource_file(rc)?;
         }
 
-        if target_env == "gnu" {
-            let libname = PathBuf::from(output_dir).join("libresource.a");
-            let status = process::Command::new(&self.ar_path)
-                .current_dir(&self.toolkit_path)
-                .arg("rsc")
-                .arg(format!("{}", libname.display()))
-                .arg(format!("{}", output.display()))
-                .status()?;
-            if !status.success() {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "Could not create static library for resource file",
-                ));
-            }
-        }
-
-        println!("cargo:rustc-link-search=native={}", output_dir);
-
-        if target_env == "msvc" {
-            println!("cargo:rustc-link-lib=dylib=resource");
-        } else {
-            if version_check::is_min_version("1.61.0").unwrap_or(true) {
-                println!("cargo:rustc-link-lib=static:+whole-archive=resource");
-            } else {
-                println!("cargo:rustc-link-lib=static=resource");
-            }
-        }
+        embed_resource::compile("resource.rc", embed_resource::NONE);
 
         Ok(())
     }
@@ -678,232 +542,68 @@ impl WindowsResource {
     /// Further more we will print the correct statements for
     /// `cargo:rustc-link-lib=` and `cargo:rustc-link-search` on the console,
     /// so that the cargo build script can link the compiled resource file.
-    pub fn compile(&self) -> io::Result<()> {
-        let output = PathBuf::from(&self.output_directory);
+    pub fn compile_for(&self, binaries: &[&str]) -> io::Result<()> {
+        let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
         let rc = output.join("resource.rc");
-        if self.rc_file.is_none() {
-            self.write_resource_file(&rc)?;
-        }
-        let rc = if let Some(s) = self.rc_file.as_ref() {
-            s.clone()
+
+        if let Some(s) = self.rc_file.as_ref() {
+            fs::write(&output, s)?;
         } else {
-            rc.to_str().unwrap().to_string()
-        };
-
-        #[cfg(not(target_os = "windows"))]
-        return self.compile_with_toolkit_gnu(rc.as_str(), &self.output_directory);
-        #[cfg(target_os = "windows")]
-        {
-            let target_env = std::env::var("CARGO_CFG_TARGET_ENV").unwrap();
-            match target_env.as_str() {
-                "gnu" => self.compile_with_toolkit_gnu(rc.as_str(), &self.output_directory),
-                "msvc" => self.compile_with_toolkit_msvc(rc.as_str(), &self.output_directory),
-                _ => Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "Can only compile resource file when target_env is \"gnu\" or \"msvc\"",
-                )),
-            }
-        }
-    }
-
-    fn compile_with_toolkit_msvc<'a>(&self, input: &'a str, output_dir: &'a str) -> io::Result<()> {
-        let rc_exe = PathBuf::from(&self.toolkit_path).join("rc.exe");
-        let rc_exe = if !rc_exe.exists() {
-            if cfg!(target_arch = "x86_64") {
-                PathBuf::from(&self.toolkit_path).join(r"bin\x64\rc.exe")
-            } else {
-                PathBuf::from(&self.toolkit_path).join(r"bin\x86\rc.exe")
-            }
-        } else {
-            rc_exe
-        };
-        println!("Selected RC path: '{}'", rc_exe.display());
-        let output = PathBuf::from(output_dir).join("resource.lib");
-        let input = PathBuf::from(input);
-        let mut command = process::Command::new(&rc_exe);
-        let command = command.arg(format!("/I{}", env::var("CARGO_MANIFEST_DIR").unwrap()));
-
-        if self.add_toolkit_include {
-            let root = win_sdk_inlcude_root(&rc_exe);
-            println!("Adding toolkit include: {}", root.display());
-            command.arg(format!("/I{}", root.join("um").display()));
-            command.arg(format!("/I{}", root.join("shared").display()));
+            self.write_resource_file(rc)?;
         }
 
-        let status = command
-            .arg(format!("/fo{}", output.display()))
-            .arg(format!("{}", input.display()))
-            .output()?;
+        embed_resource::compile_for("resource.rc", binaries, embed_resource::NONE);
 
-        println!(
-            "RC Output:\n{}\n------",
-            String::from_utf8_lossy(&status.stdout)
-        );
-        println!(
-            "RC Error:\n{}\n------",
-            String::from_utf8_lossy(&status.stderr)
-        );
-        if !status.status.success() {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Could not compile resource file",
-            ));
-        }
-
-        println!("cargo:rustc-link-search=native={}", output_dir);
-        println!("cargo:rustc-link-lib=dylib=resource");
         Ok(())
     }
 }
 
-/// Find a Windows SDK
-fn get_sdk() -> io::Result<Vec<PathBuf>> {
-    // use the reg command, so we don't need a winapi dependency
-    let output = process::Command::new("reg")
-        .arg("query")
-        .arg(r"HKLM\SOFTWARE\Microsoft\Windows Kits\Installed Roots")
-        .arg("/reg:32")
-        .output()?;
-
-    if !output.status.success() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!(
-                "Querying the registry failed with error message:\n{}",
-                String::from_utf8(output.stderr)
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?
-            ),
-        ));
+// Deprecated functions
+impl WindowsResource {
+    #[deprecated(
+        since = "0.1.1",
+        note = "This function is no-op! It is now handled by the embed-resource crate."
+    )]
+    pub fn set_toolkit_path(&mut self, _path: &str) -> &mut Self {
+        self
     }
 
-    let lines = String::from_utf8(output.stdout)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-    let mut kits: Vec<PathBuf> = Vec::new();
-    let mut lines: Vec<&str> = lines.lines().collect();
-    lines.reverse();
-    for line in lines {
-        if line.trim().starts_with("KitsRoot") {
-            let kit: String = line
-                .chars()
-                .skip(line.find("REG_SZ").unwrap() + 6)
-                .skip_while(|c| c.is_whitespace())
-                .collect();
-
-            let p = PathBuf::from(&kit);
-            let rc = if cfg!(target_arch = "x86_64") {
-                p.join(r"bin\x64\rc.exe")
-            } else {
-                p.join(r"bin\x86\rc.exe")
-            };
-
-            if rc.exists() {
-                println!("{:?}", rc);
-                kits.push(rc.parent().unwrap().to_owned());
-            }
-
-            if let Ok(bin) = p.join("bin").read_dir() {
-                for e in bin.filter_map(|e| e.ok()) {
-                    let p = if cfg!(target_arch = "x86_64") {
-                        e.path().join(r"x64\rc.exe")
-                    } else {
-                        e.path().join(r"x86\rc.exe")
-                    };
-                    if p.exists() {
-                        println!("{:?}", p);
-                        kits.push(p.parent().unwrap().to_owned());
-                    }
-                }
-            }
-        }
-    }
-    if kits.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "Can not find Windows SDK",
-        ));
+    #[deprecated(
+        since = "0.1.1",
+        note = "This function is no-op! It is now handled by the embed-resource crate."
+    )]
+    pub fn set_windres_path(&mut self, _path: &str) -> &mut Self {
+        self
     }
 
-    Ok(kits)
-}
-
-fn parse_cargo_toml(props: &mut HashMap<String, String>) -> io::Result<()> {
-    let cargo = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("Cargo.toml");
-    let mut f = fs::File::open(cargo)?;
-    let mut cargo_toml = String::new();
-    f.read_to_string(&mut cargo_toml)?;
-    if let Ok(ml) = cargo_toml.parse::<toml::Value>() {
-        if let Some(pkg) = ml.get("package") {
-            if let Some(pkg) = pkg.get("metadata") {
-                if let Some(pkg) = pkg.get("tauri-winres") {
-                    if let Some(pkg) = pkg.as_table() {
-                        for (k, v) in pkg {
-                            // println!("{} {}", k ,v);
-                            if let Some(v) = v.as_str() {
-                                props.insert(k.clone(), v.to_string());
-                            } else {
-                                println!("package.metadata.tauri-winres.{} is not a string", k);
-                            }
-                        }
-                    } else {
-                        println!("package.metadata.tauri-winres is not a table");
-                    }
-                } else {
-                    println!("package.metadata.tauri-winres does not exist");
-                }
-            } else {
-                println!("package.metadata does not exist");
-            }
-        } else {
-            println!("package does not exist");
-        }
-    } else {
-        println!("TOML parsing error")
-    }
-    Ok(())
-}
-
-fn escape_string(string: &str) -> String {
-    let mut escaped = String::new();
-    for chr in string.chars() {
-        // In quoted RC strings, double-quotes are escaped by using two
-        // consecutive double-quotes.  Other characters are escaped in the
-        // usual C way using backslashes.
-        match chr {
-            '"' => escaped.push_str("\"\""),
-            '\'' => escaped.push_str("\\'"),
-            '\\' => escaped.push_str("\\\\"),
-            '\n' => escaped.push_str("\\n"),
-            '\t' => escaped.push_str("\\t"),
-            '\r' => escaped.push_str("\\r"),
-            _ => escaped.push(chr),
-        };
-    }
-    escaped
-}
-
-fn win_sdk_inlcude_root(path: &Path) -> PathBuf {
-    let mut tools_path = PathBuf::new();
-    let mut iter = path.iter();
-    while let Some(p) = iter.next() {
-        if p == "bin" {
-            let version = iter.next().unwrap();
-            tools_path.push("Include");
-            if version.to_string_lossy().starts_with("10.") {
-                tools_path.push(version);
-            }
-            break;
-        } else {
-            tools_path.push(p);
-        }
+    #[deprecated(
+        since = "0.1.1",
+        note = "This function is no-op! It is now handled by the embed-resource crate."
+    )]
+    pub fn set_ar_path(&mut self, _path: &str) -> &mut Self {
+        self
     }
 
-    tools_path
+    #[deprecated(
+        since = "0.1.1",
+        note = "This function is no-op! It is now handled by the embed-resource crate."
+    )]
+    pub fn add_toolkit_include(&mut self, _add: bool) -> &mut Self {
+        self
+    }
+
+    #[deprecated(
+        since = "0.1.1",
+        note = "This function is no-op! It is now handled by the embed-resource crate."
+    )]
+    pub fn set_output_directory(&mut self, _path: &str) -> &mut Self {
+        self
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::escape_string;
-    use super::win_sdk_inlcude_root;
+    use super::helpers::escape_string;
 
     #[test]
     fn string_escaping() {
@@ -913,32 +613,6 @@ mod tests {
         assert_eq!(
             &escape_string(r"C:\Program Files\Foobar"),
             r"C:\\Program Files\\Foobar"
-        );
-    }
-
-    #[test]
-    fn toolkit_include_win10() {
-        use std::path::Path;
-
-        let res = win_sdk_inlcude_root(Path::new(
-            r"C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x64\rc.exe",
-        ));
-        assert_eq!(
-            res.as_os_str(),
-            r"C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0"
-        );
-    }
-
-    #[test]
-    fn toolkit_include_win8() {
-        use std::path::Path;
-
-        let res = win_sdk_inlcude_root(Path::new(
-            r"C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe",
-        ));
-        assert_eq!(
-            res.as_os_str(),
-            r"C:\Program Files (x86)\Windows Kits\8.1\Include"
         );
     }
 }

@@ -10,12 +10,9 @@ license = "MIT"
 repository = "https://github.com/tauri-apps/winres"
 documentation = "https://docs.rs/tauri-winres/"
 
-[lib]
-path = "lib.rs"
-
 [dependencies]
-toml = "0.5"
-version_check = "0.9"
+toml = "0.7"
+embed-resource = "2.1"
 
 [dev-dependencies]
 winapi = { version = "0.3", features = [ "winnt" ] }
