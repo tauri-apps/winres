@@ -523,12 +523,12 @@ impl WindowsResource {
         let rc = output.join("resource.rc");
 
         if let Some(s) = self.rc_file.as_ref() {
-            fs::write(&output, s)?;
+            fs::write(&rc, s)?;
         } else {
-            self.write_resource_file(rc)?;
+            self.write_resource_file(&rc)?;
         }
 
-        embed_resource::compile("resource.rc", embed_resource::NONE);
+        embed_resource::compile(rc, embed_resource::NONE);
 
         Ok(())
     }
