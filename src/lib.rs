@@ -44,6 +44,8 @@
 //! [`WindowsResorce::compile()`]: struct.WindowsResource.html#method.compile
 //! [`WindowsResource::new()`]: struct.WindowsResource.html#method.new
 
+mod helpers;
+
 use std::collections::HashMap;
 use std::env;
 use std::fs;
@@ -52,8 +54,6 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
 use helpers::{escape_string, parse_cargo_toml};
-
-mod helpers;
 
 /// Version info field names
 #[derive(PartialEq, Eq, Hash, Debug)]
