@@ -347,7 +347,10 @@ impl WindowsResource {
     /// ```
     pub fn set_icon_with_id<'a>(&mut self, path: &'a str, name_id: &'a str) -> &mut Self {
         self.icons.push(Icon {
-            path: path.into(),
+            path: PathBuf::from(path)
+                .canonicalize()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or(path.to_string()),
             name_id: name_id.into(),
         });
         self
