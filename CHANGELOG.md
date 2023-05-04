@@ -1,5 +1,12 @@
 # Changelog
 
+## \[0.1.1]
+
+- Added `compile_for` function to select which binaries to apply the resource to.
+  - [3aa8411](https://github.com/tauri-apps/winres/commit/3aa84115f6a80d74fd28f4f8c81ef734ccb1c37e) refactor: Use embed-resource crate to compile resources ([#9](https://github.com/tauri-apps/winres/pull/9)) on 2023-05-04
+- Use https://github.com/nabijaczleweli/rust-embed-resource to compile the resource for better cross-platform compilation support.
+  - [3aa8411](https://github.com/tauri-apps/winres/commit/3aa84115f6a80d74fd28f4f8c81ef734ccb1c37e) refactor: Use embed-resource crate to compile resources ([#9](https://github.com/tauri-apps/winres/pull/9)) on 2023-05-04
+
 ## \[0.1.0]
 
 - Initial release.
