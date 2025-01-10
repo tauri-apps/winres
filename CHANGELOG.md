@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.2.0]
+
+- Updated `toml` crate to `0.8`. This raises this crate's MSRV to `1.65`.
+  - [fad716e](https://github.com/tauri-apps/winres/commit/fad716eb94ee178b5e886ec280707bbc5589b029) chore(deps): update toml to 0.8 ([#13](https://github.com/tauri-apps/winres/pull/13)) on 2025-01-10
+
 ## \[0.1.1]
 
 - Added `compile_for` function to select which binaries to apply the resource to.
