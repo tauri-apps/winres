@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.2.1]
+
+- Updated `embed-resource` to v3. No user facing changes.
+  - [8e8897c](https://github.com/tauri-apps/winres/commit/8e8897c470e81f211a12a45edd5534926f2c691f) chore(deps): update rust crate embed-resource to v3 ([#18](https://github.com/tauri-apps/winres/pull/18)) on 2025-01-29
+
 ## \[0.2.0]
 
 - Updated `toml` crate to `0.8`. This raises this crate's MSRV to `1.65`.
