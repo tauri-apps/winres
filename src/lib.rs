@@ -531,7 +531,10 @@ impl WindowsResource {
             self.write_resource_file(&rc)?;
         }
 
-        embed_resource::compile(rc, embed_resource::NONE);
+        // This matches v2 behavior
+        embed_resource::compile(rc, embed_resource::NONE)
+            .manifest_optional()
+            .unwrap();
 
         Ok(())
     }
@@ -555,7 +558,10 @@ impl WindowsResource {
             self.write_resource_file(rc)?;
         }
 
-        embed_resource::compile_for("resource.rc", binaries, embed_resource::NONE);
+        // This matches v2 behavior
+        embed_resource::compile_for("resource.rc", binaries, embed_resource::NONE)
+            .manifest_optional()
+            .unwrap();
 
         Ok(())
     }
