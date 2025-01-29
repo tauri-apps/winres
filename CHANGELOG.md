@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.3.0]
+
+- `winres` is now more strict about `embed_resource`'s result (using manifest_required instead of manifest_option) and therefore may panic more likely, for example if the environment is missing a resource compiler.
+  - [181645b](https://github.com/tauri-apps/winres/commit/181645b7fdfdc96da58df7e839bc2a14897d6233) feat: More strictly handle resource compiler issues. ([#20](https://github.com/tauri-apps/winres/pull/20)) on 2025-01-29
+
 ## \[0.2.1]
 
 - Updated `embed-resource` to v3. No user facing changes.
