@@ -13,7 +13,7 @@ rust-version = "1.65"
 
 [dependencies]
 toml = "0.8"
-embed-resource = "2.1"
+embed-resource = "3"
 
 [dev-dependencies]
 winapi = { version = "0.3", features = [ "winnt" ] }
