@@ -533,7 +533,7 @@ impl WindowsResource {
 
         // This matches v2 behavior
         embed_resource::compile(rc, embed_resource::NONE)
-            .manifest_optional()
+            .manifest_required()
             .unwrap();
 
         Ok(())
@@ -560,7 +560,7 @@ impl WindowsResource {
 
         // This matches v2 behavior
         embed_resource::compile_for("resource.rc", binaries, embed_resource::NONE)
-            .manifest_optional()
+            .manifest_required()
             .unwrap();
 
         Ok(())
