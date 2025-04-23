@@ -46,7 +46,8 @@
 
 mod helpers;
 
-use std::collections::HashMap;
+extern crate indexmap;
+use indexmap::IndexMap;
 use std::env;
 use std::fs;
 use std::io;
@@ -85,8 +86,8 @@ struct Icon {
 
 #[derive(Debug)]
 pub struct WindowsResource {
-    properties: HashMap<String, String>,
-    version_info: HashMap<VersionInfo, u64>,
+    properties: IndexMap<String, String>,
+    version_info: IndexMap<VersionInfo, u64>,
     rc_file: Option<String>,
     icons: Vec<Icon>,
     language: u16,
@@ -141,8 +142,8 @@ impl WindowsResource {
     /// | `FILEFLAGS`          | `0x0`                        |
     ///
     pub fn new() -> Self {
-        let mut props: HashMap<String, String> = HashMap::new();
-        let mut ver: HashMap<VersionInfo, u64> = HashMap::new();
+        let mut props: IndexMap<String, String> = IndexMap::new();
+        let mut ver: IndexMap<VersionInfo, u64> = IndexMap::new();
 
         props.insert(
             "FileVersion".to_string(),
