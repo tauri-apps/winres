@@ -18,7 +18,6 @@ pub(crate) fn parse_cargo_toml(props: &mut IndexMap<String, String>) -> io::Resu
                 if let Some(pkg) = pkg.get("tauri-winres") {
                     if let Some(pkg) = pkg.as_table() {
                         for (k, v) in pkg {
-                            // println!("{} {}", k ,v);
                             if let Some(v) = v.as_str() {
                                 props.insert(k.clone(), v.to_string());
                             } else {
