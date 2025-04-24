@@ -46,8 +46,6 @@
 
 mod helpers;
 
-extern crate indexmap;
-use indexmap::IndexMap;
 use std::env;
 use std::fs;
 use std::io;
@@ -55,6 +53,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
 use helpers::{escape_string, parse_cargo_toml};
+use indexmap::IndexMap;
 
 /// Version info field names
 #[derive(PartialEq, Eq, Hash, Debug)]

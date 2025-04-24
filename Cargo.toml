@@ -10,6 +10,7 @@ license = "MIT"
 repository = "https://github.com/tauri-apps/winres"
 documentation = "https://docs.rs/tauri-winres/"
 rust-version = "1.65"
+edition = "2021"
 
 [dependencies]
 toml = "0.8"
