@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.3.1]
+
+- Switch from HashMap to IndexMap for deterministic generation of the resource file.
+  - [ad7d6af](https://github.com/tauri-apps/winres/commit/ad7d6afa03237f9f07790ddc0161ca1620672dec) Switch to IndexMap for determinism ([#23](https://github.com/tauri-apps/winres/pull/23)) on 2025-04-24
+
 ## \[0.3.0]
 
 - `winres` is now more strict about `embed_resource`'s result (using manifest_required instead of manifest_option) and therefore may panic more likely, for example if the environment is missing a resource compiler.
