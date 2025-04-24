@@ -1,12 +1,13 @@
+extern crate indexmap;
+use indexmap::IndexMap;
 use std::{
-    collections::HashMap,
     env,
     fs::File,
     io::{self, Read},
     path::Path,
 };
 
-pub(crate) fn parse_cargo_toml(props: &mut HashMap<String, String>) -> io::Result<()> {
+pub(crate) fn parse_cargo_toml(props: &mut IndexMap<String, String>) -> io::Result<()> {
     let cargo = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("Cargo.toml");
     let mut f = File::open(cargo)?;
     let mut cargo_toml = String::new();
@@ -17,7 +18,6 @@ pub(crate) fn parse_cargo_toml(props: &mut HashMap<String, String>) -> io::Resul
                 if let Some(pkg) = pkg.get("tauri-winres") {
                     if let Some(pkg) = pkg.as_table() {
                         for (k, v) in pkg {
-                            // println!("{} {}", k ,v);
                             if let Some(v) = v.as_str() {
                                 props.insert(k.clone(), v.to_string());
                             } else {
