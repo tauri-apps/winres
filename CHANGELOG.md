@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.3.2]
+
+- Update toml to 0.9 and increased the MSRV from 1.65 to 1.66 to match it
+  - [1ad418b](https://github.com/tauri-apps/winres/commit/1ad418b6e510097187d8ca7d1fb0f1ca4ec2f829) chore(deps): update toml to 0.9 and bump MSRV ([#26](https://github.com/tauri-apps/winres/pull/26)) on 2025-07-31
+
 ## \[0.3.1]
 
 - Switch from HashMap to IndexMap for deterministic generation of the resource file.
