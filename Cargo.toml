@@ -1,7 +1,7 @@
 [package]
 name = "tauri-winres"
 description = "Create and set windows icons and metadata for executables"
-version = "0.3.2"
+version = "0.3.3"
 authors = [
   "Tauri Programme within The Commons Conservancy",
   "Max Resch <resch.max@gmail.com>"
