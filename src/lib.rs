@@ -46,6 +46,7 @@
 
 mod helpers;
 
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::io;
@@ -53,10 +54,9 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
 use helpers::{escape_string, parse_cargo_toml};
-use indexmap::IndexMap;
 
 /// Version info field names
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 pub enum VersionInfo {
     /// The version value consists of four 16 bit words, e.g.,
     /// `MAJOR << 48 | MINOR << 32 | PATCH << 16 | RELEASE`
@@ -85,8 +85,8 @@ struct Icon {
 
 #[derive(Debug)]
 pub struct WindowsResource {
-    properties: IndexMap<String, String>,
-    version_info: IndexMap<VersionInfo, u64>,
+    properties: BTreeMap<String, String>,
+    version_info: BTreeMap<VersionInfo, u64>,
     rc_file: Option<String>,
     icons: Vec<Icon>,
     language: u16,
@@ -141,8 +141,8 @@ impl WindowsResource {
     /// | `FILEFLAGS`          | `0x0`                        |
     ///
     pub fn new() -> Self {
-        let mut props: IndexMap<String, String> = IndexMap::new();
-        let mut ver: IndexMap<VersionInfo, u64> = IndexMap::new();
+        let mut props: BTreeMap<String, String> = BTreeMap::new();
+        let mut ver: BTreeMap<VersionInfo, u64> = BTreeMap::new();
 
         props.insert(
             "FileVersion".to_string(),

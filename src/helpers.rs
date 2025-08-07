@@ -1,13 +1,12 @@
 use std::{
+    collections::BTreeMap,
     env,
     fs::File,
     io::{self, Read},
     path::Path,
 };
 
-use indexmap::IndexMap;
-
-pub(crate) fn parse_cargo_toml(props: &mut IndexMap<String, String>) -> io::Result<()> {
+pub(crate) fn parse_cargo_toml(props: &mut BTreeMap<String, String>) -> io::Result<()> {
     let cargo = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("Cargo.toml");
     let mut f = File::open(cargo)?;
     let mut cargo_toml = String::new();
