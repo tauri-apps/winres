@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.3.3]
+
+- Switch from IndexMap to BTreeMap for deterministic generation of the resource file.
+  - [9a46409](https://github.com/tauri-apps/winres/commit/9a464098c18d4034735fa970877d1b45575de192) fix: use BTreeMap instead of IndexMap for determinism ([#28](https://github.com/tauri-apps/winres/pull/28)) on 2025-08-07
+
 ## \[0.3.2]
 
 - Update toml to 0.9 and increased the MSRV from 1.65 to 1.66 to match it
