@@ -11,7 +11,7 @@ pub(crate) fn parse_cargo_toml(props: &mut BTreeMap<String, String>) -> io::Resu
     let mut f = File::open(cargo)?;
     let mut cargo_toml = String::new();
     f.read_to_string(&mut cargo_toml)?;
-    if let Ok(ml) = cargo_toml.parse::<toml::Value>() {
+    if let Ok(ml) = toml::from_str::<toml::Value>(&cargo_toml) {
         if let Some(pkg) = ml.get("package") {
             if let Some(pkg) = pkg.get("metadata") {
                 if let Some(pkg) = pkg.get("tauri-winres") {
