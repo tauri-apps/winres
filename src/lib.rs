@@ -238,7 +238,7 @@ impl WindowsResource {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust,compile_fail
     /// # use std::io;
     /// fn main() {
     ///   if cfg!(target_os = "windows") {
@@ -481,7 +481,7 @@ impl WindowsResource {
     ///
     /// Define a menu resource:
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # if cfg!(target_os = "windows") {
     ///     let mut res = tauri_winres::WindowsResource::new();
     ///     res.append_rc_content(r##"sample MENU

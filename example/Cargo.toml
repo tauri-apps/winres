@@ -7,6 +7,7 @@ license = "MIT"
 repository = "https://github.com/mxre/winres"
 documentation = "https://mxre.github.io/winres"
 build = "build.rs"
+edition = "2021"
 
 [package.metadata.tauri-winres]
 LegalCopyright = "Copyright © 2016-2017"
@@ -14,7 +15,8 @@ LegalCopyright = "Copyright © 2016-2017"
 FileDescription = "Example for \"winres\""
 
 [dependencies]
-winapi = { version = "0.3", features = [ "winuser" ] }
+# matching embed-resource
+windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging"] }
 
 # always use target build-dependencies for winres so that
 # it won't get pulled for non-windows OSs (saves them resources)
