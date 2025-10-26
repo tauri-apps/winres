@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.3.4]
+
+- Fix the persistent "TOML parsing error".
+  - [a11c1d6](https://github.com/tauri-apps/winres/commit/a11c1d6f16b0cb7ec58abb841394096592259e1f) fix: fixed "TOML parsing error" ([#30](https://github.com/tauri-apps/winres/pull/30)) on 2025-10-25
+
 ## \[0.3.3]
 
 - Switch from IndexMap to BTreeMap for deterministic generation of the resource file.
