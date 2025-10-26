@@ -1,7 +1,6 @@
-extern crate winapi;
-
 use std::ffi::CString;
-use winapi::um::winuser::{MessageBoxA, MB_ICONINFORMATION, MB_OK};
+
+use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_ICONINFORMATION, MB_OK};
 
 fn main() {
     let lp_text = CString::new("Hello, world!").unwrap();
@@ -9,8 +8,8 @@ fn main() {
     unsafe {
         MessageBoxA(
             std::ptr::null_mut(),
-            lp_text.as_ptr(),
-            lp_caption.as_ptr(),
+            lp_text.as_ptr() as *const u8,
+            lp_caption.as_ptr() as *const u8,
             MB_OK | MB_ICONINFORMATION,
         );
     }
