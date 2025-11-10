@@ -8,12 +8,6 @@
             "prepublish": [
                 "cargo install cargo-audit --features=fix",
                 {
-                    "command": "cargo generate-lockfile",
-                    "dryRunCommand": true,
-                    "runFromRoot": true,
-                    "pipe": true
-                },
-                {
                     "command": "echo '<details>\n<summary><em><h4>Cargo Audit</h4></em></summary>\n\n```'",
                     "dryRunCommand": true,
                     "pipe": true
