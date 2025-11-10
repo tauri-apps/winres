@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.3.5]
+
+- llvm-rc doesn't support UNC path, so de-UNC as a workaround
+  - [4e5c319](https://github.com/tauri-apps/winres/commit/4e5c319a99fee4811adfc0e1d31e4d6f9393f824) fix: remove UNC from paths ([#34](https://github.com/tauri-apps/winres/pull/34)) on 2025-11-10
+
 ## \[0.3.4]
 
 - Fix the persistent "TOML parsing error".
