@@ -3,6 +3,7 @@
     "pkgManagers": {
         "rust": {
             "version": true,
+            "postversion": ["cargo update tauri-winres"],
             "getPublishedVersion": "cargo search ${ pkgFile.pkg.package.name } --limit 1 | sed -nE 's/^[^\"]*\"//; s/\".*//1p' -",
             "prepublish": [
                 "cargo install cargo-audit --features=fix",
