@@ -17,7 +17,7 @@ FileDescription = "Example for \"winres\""
 
 [dependencies]
 # matching embed-resource
-windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.61", features = ["Win32_UI_WindowsAndMessaging"] }
 
 # always use target build-dependencies for winres so that
 # it won't get pulled for non-windows OSs (saves them resources)
