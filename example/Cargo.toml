@@ -8,7 +8,7 @@ repository = "https://github.com/mxre/winres"
 documentation = "https://mxre.github.io/winres"
 build = "build.rs"
 edition = "2021"
-rust-version = "1.66"
+rust-version = "1.76"
 
 [package.metadata.tauri-winres]
 LegalCopyright = "Copyright © 2016-2017"
