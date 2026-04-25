@@ -559,13 +559,13 @@ impl WindowsResource {
         let rc = output.join("resource.rc");
 
         if let Some(s) = self.rc_file.as_ref() {
-            fs::write(&output, s)?;
+            fs::write(&rc, s)?;
         } else {
-            self.write_resource_file(rc)?;
+            self.write_resource_file(&rc)?;
         }
 
         // This matches v2 behavior
-        embed_resource::compile_for("resource.rc", binaries, embed_resource::NONE)
+        embed_resource::compile_for(rc, binaries, embed_resource::NONE)
             .manifest_required()
             .unwrap();
 
