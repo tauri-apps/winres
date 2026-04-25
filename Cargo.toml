@@ -9,7 +9,7 @@ authors = [
 license = "MIT"
 repository = "https://github.com/tauri-apps/winres"
 documentation = "https://docs.rs/tauri-winres/"
-rust-version = "1.66"
+rust-version = "1.76"
 edition = "2021"
 
 [dependencies]
