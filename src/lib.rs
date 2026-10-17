@@ -571,6 +571,34 @@ impl WindowsResource {
 
         Ok(())
     }
+
+    /// Run the resource compiler and link the resource into every linkable target
+    ///
+    /// Same as [`compile`](Self::compile), but the compiled resource file is linked
+    /// into all targets of the package (binaries, tests, examples, benchmarks, cdylibs
+    /// and the library's unit test binary) instead of only into binaries.
+    ///
+    /// This is useful when the application manifest has to be present in test binaries too,
+    /// for example because the code under test depends on Common Controls v6.
+    ///
+    /// Use this instead of [`compile`](Self::compile), not in addition to it,
+    /// otherwise the resource is linked into binaries twice.
+    pub fn compile_for_everything(&self) -> io::Result<()> {
+        let output = PathBuf::from(env::var("OUT_DIR").unwrap_or_else(|_| ".".to_string()));
+        let rc = output.join("resource.rc");
+
+        if let Some(s) = self.rc_file.as_ref() {
+            fs::write(&rc, s)?;
+        } else {
+            self.write_resource_file(&rc)?;
+        }
+
+        embed_resource::compile_for_everything(rc, embed_resource::NONE)
+            .manifest_required()
+            .unwrap();
+
+        Ok(())
+    }
 }
 
 // Deprecated functions
