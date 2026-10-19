@@ -1,5 +1,10 @@
 # Changelog
 
+## \[0.3.7]
+
+- Add `WindowsResource::compile_for_everything` to link the resource into every target of the package, including test binaries.
+  - [376950a](https://github.com/tauri-apps/winres/commit/376950acfae8da1e2b64009b4dcd4d881249600c) feat: add `compile_for_everything` ([#42](https://github.com/tauri-apps/winres/pull/42)) on 2026-10-19
+
 ## \[0.3.6]
 
 - `compile_for` didn't work at all
