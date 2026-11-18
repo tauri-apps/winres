@@ -44,8 +44,62 @@
 //! [`WindowsResorce::compile()`]: struct.WindowsResource.html#method.compile
 //! [`WindowsResource::new()`]: struct.WindowsResource.html#method.new
 
+// STUB for non-windows platforms
+#[cfg(not(windows))]
+mod non_windows {
+    use std::io;
+
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
+    pub enum VersionInfo {
+        FILEVERSION,
+        PRODUCTVERSION,
+    }
+
+    #[derive(Default, Debug)]
+    pub struct WindowsResource;
+
+    impl WindowsResource {
+        pub fn new() -> Self {
+            Self
+        }
+        pub fn set_manifest(&mut self, _manifest: &str) -> &mut Self {
+            self
+        }
+        pub fn append_rc_content(&mut self, _content: &str) -> &mut Self {
+            self
+        }
+        pub fn set_version_info(&mut self, _info: VersionInfo, _version: u64) -> &mut Self {
+            self
+        }
+        pub fn set(&mut self, _key: &str, _value: &str) -> &mut Self {
+            self
+        }
+        pub fn set_icon_with_id(&mut self, _path: &str, _id: &str) -> &mut Self {
+            self
+        }
+        pub fn set_icon(&mut self, _path: &str) -> &mut Self {
+            self
+        }
+        pub fn compile(&self) -> io::Result<()> {
+            Ok(())
+        }
+        pub fn compile_for(&self, _binaries: &[&str]) -> io::Result<()> {
+            Ok(())
+        }
+        pub fn compile_for_everything(&self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+}
+
+#[cfg(not(windows))]
+pub use non_windows::*;
+
+#[cfg(windows)]
 mod helpers;
 
+#[cfg(windows)]
+mod windows {
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
@@ -53,7 +107,7 @@ use std::io;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
-use helpers::{escape_string, parse_cargo_toml};
+use super::helpers::{escape_string, parse_cargo_toml};
 
 /// Version info field names
 #[derive(PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
@@ -538,6 +592,7 @@ impl WindowsResource {
         }
 
         // This matches v2 behavior
+        #[cfg(windows)]
         embed_resource::compile(rc, embed_resource::NONE)
             .manifest_required()
             .unwrap();
@@ -565,6 +620,7 @@ impl WindowsResource {
         }
 
         // This matches v2 behavior
+        #[cfg(windows)]
         embed_resource::compile_for(rc, binaries, embed_resource::NONE)
             .manifest_required()
             .unwrap();
@@ -593,6 +649,7 @@ impl WindowsResource {
             self.write_resource_file(&rc)?;
         }
 
+        #[cfg(windows)]
         embed_resource::compile_for_everything(rc, embed_resource::NONE)
             .manifest_required()
             .unwrap();
@@ -643,8 +700,12 @@ impl WindowsResource {
         self
     }
 }
+}
 
-#[cfg(test)]
+#[cfg(windows)]
+pub use windows::*;
+
+#[cfg(all(test, windows))]
 mod tests {
     use super::helpers::escape_string;
 
